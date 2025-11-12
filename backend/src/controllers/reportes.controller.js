@@ -42,8 +42,18 @@ const fetchInventoryData = async (query = {}) => {
   const whereClause = {};
   const { categoria_id, proveedor_id, activo } = query;
 
-  if (categoria_id) whereClause.categoria_id = Number(categoria_id);
-  if (proveedor_id) whereClause.proveedor_id = Number(proveedor_id);
+  if (typeof categoria_id !== 'undefined') {
+    const parsedCategoriaId = Number.parseInt(categoria_id, 10);
+    if (!Number.isNaN(parsedCategoriaId)) {
+      whereClause.categoria_id = parsedCategoriaId;
+    }
+  }
+  if (typeof proveedor_id !== 'undefined') {
+    const parsedProveedorId = Number.parseInt(proveedor_id, 10);
+    if (!Number.isNaN(parsedProveedorId)) {
+      whereClause.proveedor_id = parsedProveedorId;
+    }
+  }
   if (typeof activo !== 'undefined') whereClause.activo = String(activo) === 'true';
 
   const productos = await Producto.findAll({

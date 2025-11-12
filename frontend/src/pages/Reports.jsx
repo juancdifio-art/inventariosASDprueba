@@ -8,6 +8,8 @@ import Table from '../components/Table.jsx';
 import Alert from '../components/ui/Alert.jsx';
 import Button from '../components/ui/Button.jsx';
 import { useNotifications } from '../context/NotificationContext.jsx';
+import { useCategoriasList } from '../hooks/useCategorias.js';
+import { useProveedoresList } from '../hooks/useProveedores.js';
 import {
   useInventoryReport,
   useMovementsReport,
@@ -109,6 +111,31 @@ export default function Reports() {
   const [alertaFilters, setAlertaFilters] = useState({ estado: '', prioridad: '', tipo: '', desde: '', hasta: '' });
   const [analyticsFilters, setAnalyticsFilters] = useState({ ...DEFAULT_ANALYTICS_FILTERS });
   const [drillDown, setDrillDown] = useState(null);
+
+  const categoriasQuery = useCategoriasList({ page: 1, limit: 500 });
+  const proveedoresQuery = useProveedoresList({ page: 1, limit: 500 });
+
+  const categoriaOptions = useMemo(() => {
+    const items = categoriasQuery.data?.items;
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((categoria) => ({
+        id: String(categoria.id),
+        nombre: categoria.nombre ?? `Categoría #${categoria.id}`,
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }, [categoriasQuery.data]);
+
+  const proveedorOptions = useMemo(() => {
+    const items = proveedoresQuery.data?.items;
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((proveedor) => ({
+        id: String(proveedor.id),
+        nombre: proveedor.nombre ?? `Proveedor #${proveedor.id}`,
+      }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
+  }, [proveedoresQuery.data]);
 
   const inventoryQuery = useInventoryReport(buildQueryParams(inventarioFilters), { enabled: !isUnauthorized });
   const movementsQuery = useMovementsReport(buildQueryParams(movimientoFilters), { enabled: !isUnauthorized });
@@ -276,23 +303,43 @@ export default function Reports() {
           </div>
           <div className="col-12 col-lg-3">
             <label className="form-label small text-secondary">Categoría ID</label>
-            <input
+            <select
               name="categoria_id"
               value={inventarioFilters.categoria_id}
               onChange={handleFiltersChange(setInventarioFilters)}
-              className="form-control"
-              placeholder="Ej: 5"
-            />
+              className="form-select"
+              disabled={categoriasQuery.isLoading || categoriasQuery.isError}
+            >
+              <option value="">Todas</option>
+              {categoriaOptions.map((categoria) => (
+                <option key={categoria.id} value={categoria.id}>{categoria.nombre}</option>
+              ))}
+            </select>
+            {categoriasQuery.isLoading && <div className="form-text">Cargando categorías...</div>}
+            {categoriasQuery.isError && !categoriasQuery.isLoading && <div className="form-text text-danger">No se pudieron cargar las categorías.</div>}
+            {!categoriasQuery.isLoading && !categoriasQuery.isError && categoriaOptions.length === 0 && (
+              <div className="form-text">No hay categorías disponibles.</div>
+            )}
           </div>
           <div className="col-12 col-lg-3">
             <label className="form-label small text-secondary">Proveedor ID</label>
-            <input
+            <select
               name="proveedor_id"
               value={inventarioFilters.proveedor_id}
               onChange={handleFiltersChange(setInventarioFilters)}
-              className="form-control"
-              placeholder="Ej: 2"
-            />
+              className="form-select"
+              disabled={proveedoresQuery.isLoading || proveedoresQuery.isError}
+            >
+              <option value="">Todos</option>
+              {proveedorOptions.map((proveedor) => (
+                <option key={proveedor.id} value={proveedor.id}>{proveedor.nombre}</option>
+              ))}
+            </select>
+            {proveedoresQuery.isLoading && <div className="form-text">Cargando proveedores...</div>}
+            {proveedoresQuery.isError && !proveedoresQuery.isLoading && <div className="form-text text-danger">No se pudieron cargar los proveedores.</div>}
+            {!proveedoresQuery.isLoading && !proveedoresQuery.isError && proveedorOptions.length === 0 && (
+              <div className="form-text">No hay proveedores disponibles.</div>
+            )}
           </div>
           <div className="col-12 col-lg-2">
             <label className="form-label small text-secondary">Estado</label>
